@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('dckr_pat_Ox9NdKwMPFiRCVEdfqN41FDYxqY')  // Jenkins credentials ID for Docker Hub
+        DOCKER_IMAGE_NAME = 'my-flask-app'
+        DOCKER_REPO = 'iboe0512/my-flask-app'  // Replace with your Docker Hub repo
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                // Checkout the code from GitHub
+                git branch: 'main', url: 'https://github.com/ibrahere123/Ml-Ops-Task2.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    docker.build("${DOCKER_IMAGE_NAME}")
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    // Log in to Docker Hub
+                    docker.withRegistry('https://registry.hub.docker.com', ' DOCKER_HUB_CREDENTIALS') {
+                        echo 'Logged in to Docker Hub'
+                    }
+                }
+            }
+        }
+
+        stage('Tag and Push Docker Image') {
+            steps {
+                script {
+                    // Tag the image
+                    docker.image("${DOCKER_IMAGE_NAME}").tag('latest')
+
+                    // Push the image to Docker Hub
+                    docker.image("${DOCKER_REPO}:latest").push()
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Cleanup
+            sh 'docker system prune -f'
+        }
+    }
+}
